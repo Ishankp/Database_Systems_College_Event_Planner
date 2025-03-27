@@ -1,0 +1,120 @@
+/* General styles */
+body {
+     font-family: Arial, sans-serif;
+     background-color: #f8f9fa;
+ }
+
+#availableEvents{
+    width: 100%;
+    /* styling for tables */
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+        
+    td, th {
+        border: 2px solid #000000;
+        text-align: left;
+        padding: 8px;
+    }
+
+    #tableHeader{
+        background-color: #bbbbbb;
+    }
+    
+    a:hover{
+        color:blue;
+        text-decoration: underline;
+    }
+}
+
+ 
+ /* Sidebar styling */
+ .sidebar-navigation {
+     width: 250px;
+     background-color: #343a40; /* Dark theme */
+     color: white;
+     min-height: 100vh;
+     transition: width 0.3s ease;
+ }
+ 
+ .sidebar-navigation ul {
+     list-style: none;
+     padding: 0;
+ }
+ 
+ .sidebar-navigation ul li {
+     width: 100%;
+ }
+ 
+ .sidebar-navigation ul li a {
+     display: flex;
+     align-items: center;
+     padding: 12px 15px;
+     color: white;
+     text-decoration: none;
+     font-size: 16px;
+     transition: background 0.3s ease;
+ }
+ 
+ 
+ .sidebar-navigation ul li a i {
+     margin-right: 10px;
+     font-size: 18px;
+ }
+ 
+ /* Dropdown User Menu */
+ .dropdown-toggle::after {
+     display: none; /* Remove dropdown arrow */
+ }
+ 
+ .dropdown-menu {
+     background-color: #343a40;
+     border: none;
+ }
+ 
+ .dropdown-menu a {
+     color: white;
+     padding: 10px 15px;
+ }
+ 
+ 
+ .dropdown-menu a:hover {
+     background-color: #495057;
+ }
+ 
+ /* Content Area */
+ .container-fluid .col {
+     padding: 20px;
+     background-color: #ffffff;
+     border-radius: 8px;
+     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+ }
+ 
+ /* Responsive behavior */
+ @media (max-width: 768px) {
+     .sidebar-navigation {
+         width: 60px;
+     }
+     .sidebar-navigation ul li a span {
+         display: none; /* Hide text labels */
+     }
+     .sidebar-navigation ul li a i {
+         margin-right: 0;
+         font-size: 20px;
+     }
+ }
+
+#menu_item{
+    color:white;
+}
+
+#submenu_item{
+    color:white;
+    margin-left:10px;
+}
+
+#tester{
+    background-color: red;
+}

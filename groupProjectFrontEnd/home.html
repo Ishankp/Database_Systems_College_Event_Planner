@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+     <title>Database Group Project Home Page</title>
+     <link href="home.css" rel="stylesheet">
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<!--
+Currently this is the student's view
+Admin and Super Admin view still need to be implemented 
+(modify the side bar menu to show the new actions Admin and Super Admin would have.)
+-->
+<body>
+     <div class="container-fluid">
+          <div class="row flex-nowrap">
+              <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
+                  <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
+                      <a class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                          <span class="fs-5 d-none d-sm-inline">Events Manager</span>
+                      </a>
+                      <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="menu">
+                        <!--Home page will be where users can search for events-->
+                          <li class="nav-item">
+                              <a href="/home.html" class="nav-link align-middle px-0" id = "menu_item">
+                                  <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Home</span>
+                              </a>
+                          </li>
+                          <!--Shows events the user is signed up for-->
+                          <li>
+                              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item">
+                                  <i class="fs-4 bi-speedometer2"></i> <span class="ms-1 d-none d-sm-inline">Your Events</span> </a>
+                              <ul class="collapse nav flex-column ms-1" id="submenu1" data-bs-parent="#menu">
+                                  <li class="w-100">
+                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">Week View</a>
+                                  </li>
+                                  <li>
+                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">Month View</a>
+                                  </li>
+                              </ul>
+                          </li>
+                          <!--Search for RSOs or view RSOs the user is a part of-->
+                          <li>
+                              <a href="#submenu2" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item">
+                                  <i class="fs-4 bi-bootstrap"></i> <span class="ms-1 d-none d-sm-inline">RSOs</span></a>
+                              <ul class="collapse nav flex-column ms-1" id="submenu2" data-bs-parent="#menu">
+                                  <li class="w-100">
+                                      <a class="nav-link px-0" id = "submenu_item"> Search RSOs</a>
+                                  </li>
+                                  <li>
+                                      <a class="nav-link px-0" id = "submenu_item"> Your RSOs</a>
+                                  </li>
+                              </ul>
+                          </li>
+                          <li>
+                              <a class="nav-link px-0 align-middle" id = "menu_item">
+                                  <i class="fs-4 bi-people"></i> <span class="ms-1 d-none d-sm-inline">Apply for Admin</span> </a>
+                          </li>
+                      </ul>
+                      <hr>
+                      <div class="dropdown pb-4">
+                          <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                              <span class="d-none d-sm-inline mx-1">User_Name</span>
+                          </a>
+                          <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                              <li><a class="dropdown-item">Profile</a></li>
+                              <li><a class="dropdown-item" onClick = "openSettings()">Settings</a></li>
+                              <li><a class="dropdown-item" href="/index.html">Sign out</a></li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+              <!--
+              main_space is the id used for the div holding the main components of the page.
+              use js functions to maniulate what is inside the div to change pages
+              -->
+              <div class="col py-3" id="main_space">
+                  <h3>Home Page</h3>
+                  <p>the Home Page shows all available events to the user showing simple information and allowing them to see more if they click the name of the event in the table.</p>
+                  <table id="availableEvents">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>City</th>
+                    </tr>
+                    <!-- Table rows will be added dynamically -->
+                </table>
+                <div id="pagination"></div>
+              </div>
+          </div>
+      </div>
+     <script src="jquery-3.7.1.min.js"></script>
+     <script type="text/javascript" src="code.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
