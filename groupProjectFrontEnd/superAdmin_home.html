@@ -22,40 +22,21 @@ Admin and Super Admin view still need to be implemented
                       <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="menu">
                         <!--Home page will be where users can search for events-->
                           <li class="nav-item">
-                              <a href="admin_home.html" class="nav-link align-middle px-0" id = "menu_item">
+                              <a href="superAdmin_home.html" class="nav-link align-middle px-0" id = "menu_item">
                                   <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Home</span>
                               </a>
                           </li>
-                          <!--Shows events the user is signed up for-->
+                          <!--Shows events that need approval -->
                           <li>
-                              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item">
-                                  <i class="fs-4 bi-speedometer2"></i> <span class="ms-1 d-none d-sm-inline">Your Events</span> </a>
-                              <ul class="collapse nav flex-column ms-1" id="submenu1" data-bs-parent="#menu">
-                                  <li class="w-100">
-                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">List View</a>
-                                  </li>
-                                  <li>
-                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">Calendar View</a>
-                                  </li>
-                                  
-                              </ul>
+                              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item" onClick="displayUnapprovedEvents()">
+                                  <i class="fs-4 bi-speedometer2"></i> <span class="ms-1 d-none d-sm-inline">Events</span>
+                              </a>
                           </li>
-                          <!--Search for RSOs or view RSOs the user is a part of-->
-                          <li>
-                              <a href="#submenu2" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item">
-                                  <i class="fs-4 bi-bootstrap"></i> <span class="ms-1 d-none d-sm-inline">RSOs</span></a>
-                              <ul class="collapse nav flex-column ms-1" id="submenu2" data-bs-parent="#menu">
-                                <li class="w-100">
-                                    <a class="nav-link px-0" id = "submenu_item" onclick="showRSOs()"> Search RSOs</a>
-                                </li>
-                                <li>
-                                    <a class="nav-link px-0" id = "submenu_item" onclick="showUserRSOs()"> Your RSOs</a>
-                                </li>
-                              </ul>
-                          </li>
+                          <!--superAdmin doesn't need to approve RSOs so there is no need for a RSO menu item in the superAdmin home-->
+                          <!--Need to update Create New University to fit location info (University, name, address, latitude, longitude)-->
                           <li class="nav-item">
-                              <a href="#" class="nav-link align-middle px-0" id = "menu_item" onClick="inputEventInfo()">
-                                  <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Create New Event</span>
+                              <a href="#" class="nav-link align-middle px-0" id = "menu_item" onClick="addUniversity()">
+                                  <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Create New University</span>
                               </a>
                           </li> 
                       </ul>
@@ -77,7 +58,8 @@ Admin and Super Admin view still need to be implemented
               use js functions to maniulate what is inside the div to change pages
               -->
               <div class="col py-3" id="main_space">
-                  <h3>Admin Home Page</h3>
+                  <!--superAdmin_home-->
+                  <h3>Home</h3>
                   <p>the Home Page should have a table to show all current events with notable information about them.</p>
                   <table id="availableEvents">
                     <tr>

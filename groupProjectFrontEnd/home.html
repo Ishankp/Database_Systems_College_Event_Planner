@@ -28,19 +28,8 @@ Admin and Super Admin view still need to be implemented
                           </li>
                           <!--Shows events the user is signed up for-->
                           <li>
-                              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item">
+                              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle" id = "menu_item" onclick="showUserEvents()">
                                   <i class="fs-4 bi-speedometer2"></i> <span class="ms-1 d-none d-sm-inline">Your Events</span> </a>
-                              <ul class="collapse nav flex-column ms-1" id="submenu1" data-bs-parent="#menu">
-                                  <li class="w-100">
-                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">Week View</a>
-                                  </li>
-                                  <li>
-                                      <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">Month View</a>
-                                  </li>
-                                  <li>
-                                    <a  class="nav-link px-0" id = "submenu_item"> <span class="d-none d-sm-inline">List View</a>
-                                  </li>
-                              </ul>
                           </li>
                           <!--Search for RSOs or view RSOs the user is a part of-->
                           <li>
@@ -54,10 +43,6 @@ Admin and Super Admin view still need to be implemented
                                       <a class="nav-link px-0" id = "submenu_item" onclick="showUserRSOs()"> Your RSOs</a>
                                   </li>
                               </ul>
-                          </li>
-                          <li>
-                              <a class="nav-link px-0 align-middle" id = "menu_item">
-                                  <i class="fs-4 bi-people"></i> <span class="ms-1 d-none d-sm-inline">Apply for Admin</span> </a>
                           </li>
                       </ul>
                       <hr>
@@ -78,7 +63,7 @@ Admin and Super Admin view still need to be implemented
               use js functions to maniulate what is inside the div to change pages
               -->
               <div class="col py-3" id="main_space">
-                  <h3>Home Page</h3>
+                  <h3>Home</h3>
                   <div class="input-group mb-3">
                         <input type="text" class="form-control" id="EventSearchBar" placeholder="Search Events" aria-label="Search Events" aria-describedby="basic-addon2">
                         <div class="input-group-append">
