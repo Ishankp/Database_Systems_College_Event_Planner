@@ -1,5 +1,8 @@
-const urlBase = '';
-const extension = 'php'; 
+const urlBase = ""; // leave as is or set to your domain if needed
+const extension = 'php';
+const apiUrl = "http://localhost/College Event Planner/Database_Systems_College_Event_Planner/api.php";
+
+
 
 //insert javascript here for website
 
@@ -10,56 +13,79 @@ $('#loginButton').click(function checkCredentials(){
      var login = document.getElementById("username").value;
 	var password = document.getElementById("password").value;
      
-     if(login === '' || password === '' ){
-          $('#errorBoxLogin').html("Error: please fill in all boxes");
-          $('#errorBoxLogin').show();
-     }else{
-          //add function to check database for existing user and log them in.
-	     //currently the page just shows the inputed username and password but doesn't redirect
-          $('#errorBoxLogin').html("Error: Username and Password incorrect");
-          $('#errorBoxLogin').show();
-          alert("username: " + login + "\npassword: " + password);
+     if (login === '' || password === '') {
+          $('#errorBoxLogin').html("Error: please fill in all boxes").show();
+     } else {
+          // Call the loginUser API endpoint
+          $.ajax({
+               type: "POST",
+               url: apiUrl,
+               data: { 
+                   action: "loginUser",
+                   email: login,       // using the username field as email
+                   password: password 
+               },
+               dataType: "json",
+               success: function(response) {
+                    if (response.success) {
+                         // Login successful
+                         // Store user data in local storage or session storage as needed
+                         localStorage.setItem('uid', response.uid);
+                         window.location.href = "home.html"; // change to your home/dashboard page URL
+                    } else {
+                         $('#errorBoxLogin').html("Incorrect email or password").show();
+                    }
+               },
+               error: function(jqXHR, textStatus, errorThrown) {
+                    $('#errorBoxLogin').html("Error: " + textStatus).show();
+               }
+          });
      }
      
 });
 
 //checks if all boxes are filled out
 $('#signUpButton').click(function checkCredentials(){
-
      var firstName = document.getElementById("firstName").value;
      var lastName = document.getElementById("lastName").value;
      var email = document.getElementById("email").value;
      var phone = document.getElementById("phone").value;
      var username = document.getElementById("username").value;
-	var password = document.getElementById("password").value;
+     var password = document.getElementById("password").value;
      if(firstName === '' || lastName === '' || email === '' || phone === '' || username === '' || password === ''){
           $('#errorBox').html("Error: please fill in all boxes");
           $('#errorBox').show();
-     }else{
+     } else {
           $('#errorBox').hide();
           let universities = ["UCF","USF","FSU","UF"];
           const container = document.getElementById("signUpBox");
           container.innerHTML = 
           `
-               <h2 class = "text-center">Select a University</h2>
+               <h2 class="text-center">Select a University</h2>
                <select class="form-control" id="universities">
-                    <option value = ""></option>
+                    <option value=""></option>
                </select>
                <br>
-               <button class = "btn btn-large btn-primary" id = "makeUser" onClick="makeUser('${firstName}', '${lastName}', '${email}', '${phone}', '${username}', '${password}')">Create Account</button>
-          `
-          ;
+               <button class="btn btn-large btn-primary" id="makeUser" onClick="makeUser('${firstName}', '${lastName}', '${email}', '${phone}', '${username}', '${password}')">Create Account</button>
+          `;
           let dropDown = document.getElementById("universities");
           universities.forEach(x => {
                let option = document.createElement("option");
                option.text = x;
                dropDown.add(option);
-           });
-          
+          });
      }
-     
 });
-
+ 
+// Use 'let' so we can update last_uid
+const uid = localStorage.getItem('uid');
+let last_uid = uid || 1011; // Initialize uid outside the function to keep track of it
+const uidmaker = () => {
+     let uid = last_uid + 1; // Increment the uid by 1
+     last_uid = uid;         // Update last_uid to the new uid
+     return uid.toString();  // Return the new uid as a string
+};
+ 
 function makeUser(first, last, email, phone, username, password) {
      const dropDown = document.getElementById("universities");
  
@@ -71,16 +97,40 @@ function makeUser(first, last, email, phone, username, password) {
      const university = dropDown.value;
  
      if (!university) {
-         $('#errorBox').html("Error: You must pick a University");
-         $('#errorBox').show();
+         $('#errorBox').html("Error: You must pick a University").show();
      } else {
-          //user should be created using the info here
          $('#errorBox').hide();
-         alert("First Name: " + first + "\nLast Name: " + last + "\nEmail: " + email + "\nPhone: " + phone +"\nUsername: " + username + "\nPassword: " + password + "\nUniversity:" + university);
-
+         // Get a new uid from uidmaker
+         let uid = uidmaker(); 
+ 
+         $.ajax({
+            type: "POST",
+            url: apiUrl,  // Ensure apiUrl is correctly defined as the absolute URL to your API file
+            data: {
+                action: "registerUser",
+                uid: uid,
+                university: university,
+                email: email,
+                firstname: first,
+                lastname: last,
+                phone: phone,
+                password: password
+            },
+            dataType: "json",
+            success: function(response) {
+                if (response.success) {
+                    // Registration successful
+                    window.location.href = "index.html"; // Redirect as needed
+                } else {
+                    $('#errorBox').html("Error: " + response.message).show();
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                $('#errorBox').html("Error: " + textStatus).show();
+            }
+         });
      }
- }
-
+}
 
 //used for normal password box in both login and sign up sheets
 $('#check-show').click(function(){
@@ -103,74 +153,115 @@ $('#check-show').click(function(){
 
 //start of student view functions (some of these functions as also used in admin and superAdmin)
 
-//holds all event data (functions will trim this to fit specifications like "approved events" or "Events you've signed up for")
-const events = [
-     { name: "Chess Tournament", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 2", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: false},
-     { name: "Event 3", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 4", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 5", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 6", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 7", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: false},
-     { name: "Event 8", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 9", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: false},
-     { name: "Event 10", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: false},
-     { name: "Event 11", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
-     { name: "Event 12", type:"Public", description: "interesting things", date: "12/31/1999", time: "8:00 am - 5:00 pm", location: "123 test rd orlando FL, 12345", University: "College", RSO: "none", approved: true},
+// Number of rows per page for pagination
+const rowsPerPage = 6;
+let currentPage = 1;
+let detailedEvents = []; // Array to hold detailed event data
 
- ];
+// When the document is ready, load the events.
+$(document).ready(function() {
+    const uid = localStorage.getItem('uid');
+    // Load events and then fetch detailed info for each event.
+    loadAllAndSpecificEvents(uid);
+});
 
- const rowsPerPage = 6;
- let currentPage = 1;
- 
- 
+// Function to load all events (returns basic info, such as EventID) then load full details.
+function loadAllAndSpecificEvents(uid) {
+    $.ajax({
+        type: "POST",
+        url: apiUrl,
+        data: { 
+            action: "loadAllEvents",
+            uid: uid
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                const events = response.events; // expected to be an array with at least an "EventID" field
+                // Map each event to an AJAX call for detailed data:
+                const detailRequests = events.map(event => {
+                    return $.ajax({
+                        type: "POST",
+                        url: apiUrl,
+                        data: {
+                            action: "loadSpecificEvent",
+                            eventID: event.EventID  // Ensure this key matches what loadAllEvents returns
+                        },
+                        dataType: "json"
+                    });
+                });
+                
+                // When all AJAX calls for details complete.
+                $.when(...detailRequests)
+                    .done(function() {
+                        detailedEvents = [];
+                        // If there's only one event, $.when returns a single response array.
+                        if(detailRequests.length === 1) {
+                            const res = arguments[0]; // arguments[0] is the JSON response
+                            if (res.success) {
+                                detailedEvents.push(res);
+                            }
+                        } else {
+                            // For multiple responses, each argument is an array [data, textStatus, jqXHR].
+                            for (let i = 0; i < arguments.length; i++) {
+                                const res = arguments[i][0];
+                                if (res.success) {
+                                    detailedEvents.push(res);
+                                }
+                            }
+                        }
+                        // Display the detailed events in the table.
+                        displayDetailedEvents(detailedEvents);
+                    })
+                    .fail(function() {
+                        $("#availableEvents").html("<tr><td colspan='7'>Error loading event details.</td></tr>");
+                    });
+            } else {
+                $("#availableEvents").html("<tr><td colspan='7'>Error: " + response.message + "</td></tr>");
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $("#availableEvents").html("<tr><td colspan='7'>Error: " + textStatus + "</td></tr>");
+        }
+    });
+}
 
- function displayEvents(page, eventList) {
-     const table = document.getElementById("availableEvents");
-     const startIndex = (page - 1) * rowsPerPage;
-     const endIndex = startIndex + rowsPerPage;
-     
-     const slicedData = eventList.slice(startIndex, endIndex);
+// Function to build the table with detailed event information.
+function displayDetailedEvents(events) {
+    const table = $("#availableEvents");
 
-     // Clear existing table rows
-     table.innerHTML = 
-     `
-     <tr>
-          <th>Name</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Location</th>
-          <th></th>
-     </tr>
-     `;
+    // Build the table header – note that we provide 7 columns here:
+    // Event Name, Description, Time, Location, University, Type, and RSO Name.
+    table.html(`
+        <tr>
+            <th>Event Name</th>
+            <th>Description</th>
+            <th>Time</th>
+            <th>Location</th>
+            <th>University</th>
+            <th>Type</th>
+            <th>RSO Name</th>
+        </tr>
+    `);
 
-     // Add new rows to the table
-     slicedData.forEach(item => {
-          
-               const row = table.insertRow();
-               const nameCell = row.insertCell(0);
-               const dateCell = row.insertCell(1);
-               const timeCell = row.insertCell(2);
-               const locationCell = row.insertCell(3); 
-               const expandButton = row.insertCell(4);
-               
-               const name = item.name;
-               const date = item.date;
-               const time = item.time;
-               const lcoation = item.location;
-               const university = item.university;
-
-               nameCell.innerHTML = item.name;
-               dateCell.innerHTML = item.date;
-               timeCell.innerHTML = item.time;
-               locationCell.innerHTML = item.location;
-               expandButton.innerHTML = '<button id = '+ item.name.replace(/\s+/g, '-') + ' onClick = "expandEvent(this.id)">Expand</button>';
-
-     });
-
-     // Update pagination
-     updatePagination(page, eventList);
- }
+    // Build each table row based on the detailed event data.
+    events.forEach(event => {
+        // If the event is not an RSO event, we leave rsoName blank.
+        const rsoDisplay = (event.type === "RSO" && event.rsoName) ? event.rsoName : "";
+        const row = `
+            <tr>
+                <td>${event.eventName}</td>
+                <td>${event.description}</td>
+                <td>${event.eventTime}</td>
+                <td>${event.location_name}</td>
+                <td>${event.university}</td>
+                <td>${event.type}</td>
+                <td>${rsoDisplay}</td>
+            </tr>
+        `;
+        table.append(row);
+    });
+}
 
  function updatePagination(currentPage, eventList) {
      const pageCount = Math.ceil(eventList.length / rowsPerPage);
@@ -197,7 +288,13 @@ let approvedEvents = getApprovedEvents(events);
 let unapprovedEvents = getUnapprovedEvents(events);
 
 // Initial display for event table
-displayEvents(currentPage, approvedEvents);
+window.onload = function() {
+     // Your code to run on this specific page load
+     if (window.location.href.includes("home.html")) {
+          displayEvents(currentPage, approvedEvents);
+     }
+
+};
 
 function searchEvents(){
      const searchValue = document.getElementById("EventSearchBar").value;
@@ -738,6 +835,23 @@ function deleteAccount(){
           window.location.href = "index.html";
      }
 }
+
+function logout() {
+     // Clear localStorage and sessionStorage.
+     localStorage.clear();
+     sessionStorage.clear();
+ 
+     // Delete all cookies that are accessible via JavaScript.
+     document.cookie.split(";").forEach(function(cookie) {
+         // Remove leading spaces and then set the cookie to expire in the past.
+         document.cookie = cookie.replace(/^ +/, "")
+             .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+     });
+ 
+     // Finally, redirect to the login page.
+     window.location.href = "/groupProjectFrontEnd/index.html";
+ }
+ 
 
 //use functions to change the contents of main_space to simulate a page change while keeping the Side Menu
 function openSettings(){

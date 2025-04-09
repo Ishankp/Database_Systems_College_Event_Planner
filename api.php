@@ -1,5 +1,10 @@
 <?php
 header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: *");
+
+// Start a session to manage user sessions.
+session_start();
 
 // Include the database connection file.
 require_once 'db_connection.php';
@@ -84,11 +89,25 @@ function registerUser($pdo) {
         echo json_encode(["success" => false, "message" => "Missing required fields"]);
         return;
     }
-    
-    // Hash the password for security.
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
     try {
+        // Check if the email is already in the database.
+        $checkSQL = "SELECT * FROM `User` WHERE email = :email LIMIT 1";
+        $checkStmt = $pdo->prepare($checkSQL);
+        $checkStmt->execute([':email' => $email]);
+        
+        if ($checkStmt->fetch(PDO::FETCH_ASSOC)) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Email already registered. Please use a different email."
+            ]);
+            return;
+        }
+        
+        // If not, hash the password for security.
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+        // Insert the new user into the database.
         $sql = "INSERT INTO `User` (UID, university, email, firstname, lastname, phone, password) 
                 VALUES (:uid, :university, :email, :firstname, :lastname, :phone, :password)";
         $stmt = $pdo->prepare($sql);
@@ -101,6 +120,7 @@ function registerUser($pdo) {
             ':phone'      => $phone,
             ':password'   => $hashedPassword,
         ]);
+        
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         echo json_encode(["success" => false, "message" => $e->getMessage()]);
@@ -127,6 +147,11 @@ function loginUser($pdo) {
 
         // Verify the password.
         if ($user && password_verify($password, $user['password'])) {
+            // Store session data
+            $_SESSION['user'] = [
+                'uid' => $user['UID'],
+                'email' => $email
+            ];
             echo json_encode(["success" => true, "uid" => $user['UID']]);
         } else {
             echo json_encode(["success" => false, "message" => "Invalid email or password"]);
