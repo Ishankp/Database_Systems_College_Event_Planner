@@ -93,7 +93,14 @@ const uidmaker = () => {
      last_uid = uid;         // Update last_uid to the new uid
      return uid.toString();  // Return the new uid as a string
 };
- 
+
+let last_eventid = 3010 || eventid; 
+const eventIdMaker = () => {
+     let eventid = Number(last_eventid + 1);
+     last_eventid = eventid;        
+     return eventid.toString();  
+};
+
 function makeUser(first, last, email, phone, username, password) {
      const dropDown = document.getElementById("universities");
  
@@ -188,7 +195,6 @@ function loadAllAndSpecificEvents(uid) {
             if (response.success) {
                 // Use a local variable to store the partial events
                 const partialEvents = response.events; // Expected to be an array with at least an "EventID" field
-                console.log(partialEvents);
                 // Create an empty array to store the detailed events.
                 const detailedEvents = [];
                 
@@ -223,7 +229,6 @@ function loadAllAndSpecificEvents(uid) {
                                 }
                             }
                         }
-                        console.log("Detailed Events:", detailedEvents);
                         // Display the detailed events in the table.
                         displayDetailedEvents(detailedEvents, partialEvents);
                     })
@@ -680,13 +685,72 @@ const RSOs = [
  }
  
 
- function expandRSO(RSOid) {
-     // Get the actual event using the button's ID (which is the name with hyphens)
-     alert("expand RSO info");
+ function expandRSO(RSOid, RSOName) {
+     // Call the API to load the members of the given RSO using the RSOid.
+     $.ajax({
+         type: "POST",
+         url: apiUrl,  // Ensure apiUrl points to your API file.
+         data: {
+             action: "loadRSOMembers",
+             rsoid: RSOid
+         },
+         dataType: "json",
+         success: function(response) {
+             if (response.success) {
+                 // Build the HTML output using the retrieved members and use RSOName in the header.
+                 let htmlOutput = `<h2>Members of RSO: ${RSOName}</h2>`;
+                 if (response.members && response.members.length > 0) {
+                     htmlOutput += `<ul>`;
+                     response.members.forEach(member => {
+                         htmlOutput += `<li>${member.firstname} ${member.lastname} (${member.email})</li>`;
+                     });
+                     htmlOutput += `</ul>`;
+                 } else {
+                     htmlOutput += `<p>No members found.</p>`;
+                 }
+                 // Inject the HTML into your main container (an element with id "main_space")
+                 document.getElementById("main_space").innerHTML = htmlOutput;
+             } else {
+                 alert("Error: " + response.message);
+             }
+         },
+         error: function(jqXHR, textStatus, errorThrown) {
+             alert("Error loading RSO members: " + textStatus);
+         }
+     });
  }
 
- function joinRSO(RSOid){
-     alert("needs code for joining RSO");
+ function joinRSO(rsoid) {
+     // Retrieve the logged-in user's UID from localStorage.
+     const uid = localStorage.getItem('uid');
+     
+     if (!uid) {
+         alert("User not logged in.");
+         return;
+     }
+     
+     $.ajax({
+         type: "POST",
+         url: apiUrl, // Your API file, e.g., "http://localhost/Event_planner/api.php"
+         data: {
+             action: "studentRSOJoin", // This is the action your API expects
+             uid: uid,
+             rsoid: rsoid
+         },
+         dataType: "json",
+         success: function(response) {
+             if (response.success) {
+                 alert("RSO joined successfully!");
+                 // Optionally update the UI, such as refreshing the list of RSOs or 
+                 // disabling the join button for the joined RSO.
+             } else {
+                 alert("Error: " + response.message);
+             }
+         },
+         error: function(jqXHR, textStatus, errorThrown) {
+             alert("Error joining RSO: " + textStatus);
+         }
+     });
  }
 
  // Initial display for RSO table
@@ -729,7 +793,6 @@ function lookupRSOs() {
          <h2>Available RSOs</h2>
          <table id="availableRSOs" class="table table-striped">
              <tr>
-                 <th>RSO ID</th>
                  <th>RSO Name</th>
                  <th>Actions</th>
              </tr>
@@ -741,11 +804,11 @@ function lookupRSOs() {
          // Use template literals and wrap parameters in quotes as needed.
          const row = `
              <tr>
-                 <td>${rso.RSOID}</td>
                  <td>${rso.Name}</td>
                  <td>
-                     <button class="btn btn-info" onClick="expandRSO('${rso.RSOID}')">View Details</button>
-                     <button class="btn btn-primary" onClick="joinRSO('${rso.RSOID}')">Join RSO</button>
+                     
+                     <button class="btn btn-info" onClick="expandRSO('${rso.RSOID}', '${rso.Name}')">View Details</button>
+                     <button class="btn btn-info" onClick="joinRSO('${rso.RSOID}')">Join</button>
                  </td>
              </tr>
          `;
@@ -758,10 +821,7 @@ function lookupRSOs() {
      lookupRSOs();
  }
 
-function searchRSOs(){
-     const searchValue = document.getElementById("RSOsearchBar").value;
-     alert("User is searching for \"" + searchValue + "\"");
-}
+
 
 function displayUserRSOEvents(page, RSOList) {
      const table = document.getElementById("availableEvents");
@@ -819,15 +879,42 @@ function displayUserRSOEvents(page, RSOList) {
      }
  }
  
- function leaveRSO(){
-     const leave = confirm("Are you Sure?");
-     if(leave){
-          //leaveRSO
-          alert("you have left the RSO");
-          
+ function leaveRSO(rsoid) {
+     // Confirm with the user.
+     const confirmLeave = confirm("Are you sure you want to leave this RSO?");
+     if (!confirmLeave) return;
+ 
+     // Retrieve the current user's uid from localStorage.
+     const uid = localStorage.getItem('uid');
+     if (!uid) {
+         alert("User not logged in.");
+         return;
      }
+ 
+     // Make the AJAX call to leave the RSO.
+     $.ajax({
+         type: "POST",
+         url: apiUrl,  // Ensure this points to your API file, e.g., "http://localhost/Event_planner/api.php"
+         data: {
+             action: "studentRSOLeave",
+             uid: uid,
+             rsoid: rsoid
+         },
+         dataType: "json",
+         success: function(response) {
+             if (response.success) {
+                 alert("You have left the RSO successfully!");
+                 // Optionally, refresh the list of RSOs for the user
+                 showUserRSOs();
+             } else {
+                 alert("Error: " + response.message);
+             }
+         },
+         error: function(jqXHR, textStatus, errorThrown) {
+             alert("Error leaving RSO: " + textStatus);
+         }
+     });
  }
-
  function expandUserRSO(RSOid) {
      // Get the actual event using the button's ID (which is the name with hyphens)
      const RSO = RSOs.find(e => e.name.replace(/\s+/g, '-') === RSOid);
@@ -850,126 +937,182 @@ function displayUserRSOEvents(page, RSOList) {
 
 
 
-function showUserRSOs(){
-
-     const container = document.getElementById("main_space");
-     container.innerHTML = 
-     `
-     <h2>Your RSOs</h2>
-     <table id="availableEvents">
-          <tr>
-               <th></th>
-               <th></th>
-               <th></th>
-          </tr>
-          <!-- Table rows will be added dynamically -->
-     </table>
-     `;
-     displayUserRSOEvents(currentRSOPage, RSOs);
-}
-
-//start of admin funcitons 
-function inputEventInfo(){
-     const container = document.getElementById("main_space");
-     container.innerHTML = 
-     `
-          <h4 >Create New Event</h4>
-          <div id = eventInput>
-               <div class="eventTypeStyling">
-                    <label>Event Name:</label>
-                    <input type="text" class="form-control" data-bs-theme="dark" id="eventName" >
-               </div>
-               <div class="eventTypeStyling">
-                    <label>Event Type:</label>
-                    <select name="eventType" class="form-control" data-bs-theme="dark" id="eventType">
-                         <option value="public">Public</option>
-                         <option value="private">Private</option>
-                         <option value="RSO">RSO</option>
-                    </select>
-               </div>
-               <div class="eventTypeStyling">
-                    <label>RSO Name (Only for RSO Events):</label>
-                    <input type="text" class="form-control" data-bs-theme="dark" id="RSO_Name">
-               </div>
-               
-               <div class="eventTypeStyling">
-                    <label>Date and Time:</label>
-                    <div class="input-group mb-3 ">
-                         <input type="date" class="form-control" data-bs-theme="dark" id="eventDate">
-                         <input type="time" class="form-control" data-bs-theme="dark" id="eventTime">
-                    </div>
-               </div>
-               <div class="eventTypeStyling">
-                    <label >Location:</label>
-                    <input type="text" class="form-control" data-bs-theme="dark" id="eventLocation">
-               </div>
-               <div class="eventTypeStyling">
-                    <label >University:</label>
-                    <input type="text" class="form-control" data-bs-theme="dark" id="eventUniversity">
-               </div>
-               <button class = "btn btn-large btn-dark eventTypeStyling" id = "grabEventInfo" >Continue</button>
-          </div>
-     `;
-}
-
-//using an event listener fixes issues when linking functions to dynamically added elements
-document.addEventListener("click", function(event) {
-     if (event.target && event.target.id === "grabEventInfo") {
-          grabEventInfo();
-     }else if(event.target && event.target.id === "createEvent"){
-          createEvent();
+ function showUserRSOs() {
+     // Retrieve the user's UID from localStorage.
+     const uid = localStorage.getItem('uid');
+     if (!uid) {
+         alert("User not logged in.");
+         return;
      }
-});
-
-function grabEventInfo(){
-     // Grab info
-     var name = document.getElementById("eventName").value;
-     var type = document.getElementById("eventType").value;
-     var RSO_Name = document.getElementById("RSO_Name").value;
-     var date = document.getElementById("eventDate").value;
-     var time = document.getElementById("eventTime").value;
-     var location = document.getElementById("eventLocation").value;
-     var university = document.getElementById("eventUniversity").value;
-
-     // Check for missing values
-     if(name === '' || type === '' || date === '' || time === '' || location === '' || university === ''){
-          alert("Please fill in all required areas");
-          return;
-     } 
-     if(type === 'RSO' && RSO_Name === ''){
-          alert("RSO Name is required for RSO events");
-          return;
-     }else{
-          const container = document.getElementById("main_space");
-          container.innerHTML = 
-          `
-               <h4 >Create New Event</h4>
-               <div class="mb-3">
-                    <label for="eventDescription" class="form-label eventTypeStyling">Please provide a short description of the event:</label>
-                    <textarea class="form-control eventTypeStyling" data-bs-theme="dark" id="eventDescription" rows="10"></textarea>
-               </div>
-               <button class = "btn btn-large btn-dark eventTypeStyling" id = "createEvent" >Create Event</button>
-          `;
-          //if the statement below is true then the admin has given all neccessary information to create an event
-          document.getElementById('createEvent').addEventListener('click', function() {
-               //description can be empty 
-               const description = document.getElementById("eventDescription").value;
-               /*
-                code for creating event would be here. (variable names for each piece of info is below for reference) 
-
-                Event Name = name
-                Event Type = type
-                Event RSO = RSO_Name (Only required for RSO Events)
-                Event Date = date
-                Event Time = time
-                Event Location = location
-                Event University = university
-               */ 
-          });
-     }
-
      
-}
+     $.ajax({
+         type: "POST",
+         url: apiUrl, // e.g., "http://localhost/Event_planner/api.php"
+         data: {
+             action: "loadUserRSOs",
+             uid: uid
+         },
+         dataType: "json",
+         success: function(response) {
+             if (response.success) {
+                 // Build the HTML output similar to the events table.
+                 let htmlOutput = `
+                     <h2>Your RSOs</h2>
+                     <table id="userRSOs" class="table table-striped">
+                         <tr>
+                             <th>RSO Name</th>
+                             <th>Actions</th>
+                         </tr>
+                 `;
+                 response.rsos.forEach(rso => {
+                     htmlOutput += `
+                         <tr>
+                             <td>${rso.Name}</td>
+                             <td>
+                                 <button class="btn btn-info" onClick="expandRSO('${rso.RSOID}', '${rso.Name}')">View Details</button>
+                                 <button class="btn btn-danger" onClick="leaveRSO('${rso.RSOID}')">Leave RSO</button>
+                             </td>
+                         </tr>
+                     `;
+                 });
+                 htmlOutput += `</table>`;
+                 document.getElementById("main_space").innerHTML = htmlOutput;
+             } else {
+                 document.getElementById("main_space").innerHTML = `<p>Error: ${response.message}</p>`;
+             }
+         },
+         error: function(jqXHR, textStatus, errorThrown) {
+             document.getElementById("main_space").innerHTML = `<p>Error: ${textStatus}</p>`;
+         }
+     });
+ }
+
+ function renderEventForm(){
+     const container = document.getElementById("main_space");
+     container.innerHTML = `
+       <h4>Create New Event</h4>
+   
+       <div class="mb-3">
+         <label for="eventName">Event Name:</label>
+         <input type="text" id="eventName" class="form-control">
+       </div>
+   
+       <div class="mb-3">
+         <label for="eventType">Event Type:</label>
+         <select id="eventType" class="form-control">
+           <option value="">Select an event type</option>
+           <option value="public">Public</option>
+           <option value="private">Private</option>
+           <option value="RSO">RSO</option>
+         </select>
+       </div>
+   
+       <div class="mb-3" id="rsoDiv" style="display:none;">
+         <label for="rsoSelect">RSO:</label>
+         <select id="rsoSelect" class="form-control">
+           <option value="">-- choose an RSO --</option>
+         </select>
+       </div>
+   
+       <div class="mb-3">
+         <label for="eventDate">Date:</label>
+         <input type="date" id="eventDate" class="form-control">
+       </div>
+   
+       <div class="mb-3">
+         <label for="eventTime">Time:</label>
+         <input type="time" id="eventTime" class="form-control">
+       </div>
+   
+       <div class="mb-3">
+         <label for="eventLocation">Location:</label>
+         <input type="text" id="eventLocation" class="form-control">
+       </div>
+   
+       <div class="mb-3">
+         <label for="eventDescription">Description:</label>
+         <textarea id="eventDescription" class="form-control" rows="5"></textarea>
+       </div>
+   
+       <button class="btn btn-primary" id="createEvent">Create Event</button>
+     `;
+   
+     // 1) Show/hide the RSO selector when type changes
+     document.getElementById("eventType")
+       .addEventListener("change", function(){
+         document.getElementById("rsoDiv").style.display =
+           this.value === "RSO" ? "block" : "none";
+       });
+   
+     // 2) Fetch all approved RSOs and populate the dropdown
+     $.post(apiUrl,
+       { action: "getRSOs", uid: localStorage.getItem("uid") },
+       function(resp){
+         if (resp.success) {
+           const sel = document.getElementById("rsoSelect");
+           resp.rsos.forEach(rso => {
+             const opt = document.createElement("option");
+             opt.value = rso.RSOID;
+             opt.textContent = rso.Name;
+             sel.appendChild(opt);
+           });
+         } else {
+           console.error("Failed to load RSOs:", resp.message);
+         }
+       },
+       "json"
+     );
+   
+     // 3) Handle the Create Event click
+     document.getElementById("createEvent")
+       .addEventListener("click", function(){
+         const name        = document.getElementById("eventName").value.trim();
+         const type        = document.getElementById("eventType").value;
+         const rsoid       = document.getElementById("rsoSelect").value;
+         const dateVal     = document.getElementById("eventDate").value;
+         const timeVal     = document.getElementById("eventTime").value;
+         const locationVal = document.getElementById("eventLocation").value.trim();
+         const description = document.getElementById("eventDescription").value.trim();
+   
+         // basic validation
+         if (!name || !type || !dateVal || !timeVal || !locationVal) {
+           return alert("Please fill in all required fields.");
+         }
+         if (type === "RSO" && !rsoid) {
+           return alert("Please select an RSO.");
+         }
+   
+         // build payload
+         const payload = {
+           action:       type === "public"
+                           ? "createPublicEvent"
+                           : type === "private"
+                             ? "createPrivateEvent"
+                             : "createRSOEvent",
+           eventid:      eventIdMaker(),
+           eventname:    name,
+           description:  description,
+           eventtime:    dateVal + " " + timeVal,
+           location_name: locationVal,
+           uid:          localStorage.getItem("uid")
+         };
+         if (type === "RSO") payload.rsoid = rsoid;
+   
+         // send to API
+         $.post(apiUrl, payload, function(res){
+           if (res.success) {
+             alert("Event created successfully!");
+             // optionally clear or redirect:
+             window.location.href = "admin_home.html";
+           } else {
+             alert("Error: " + res.message);
+           }
+         }, "json")
+         .fail((_, status) => alert("Request failed: " + status));
+     });
+   }
+   
+
 
 //start of superAdmin functions
 function displaySuperAdminEvents(page, eventList) {
@@ -1106,19 +1249,83 @@ document.addEventListener("click", function(event) {
 });
 
 function createLocation(){
-     const university = document.getElementById("university").value;
-     const name = document.getElementById("name").value;
-     const latitude = document.getElementById("latitude").value;
-     const longitude = document.getElementById("longitude").value;
-     const address = document.getElementById("address").value;
-     if(university == "" || name == "" || latitude == "" || longitude == "" || address == ""){
-          alert("Please fill in all areas");
-     }else{
-          alert(name + " has been added to the list of locations");
-          //add location to list of locations
-          window.location.href = "superAdmin_home.html";
+     // grab & trim all inputs
+     const university = document.getElementById("university").value.trim();
+     const name       = document.getElementById("name").value.trim();
+     const latitude   = document.getElementById("latitude").value.trim();
+     const longitude  = document.getElementById("longitude").value.trim();
+     const address    = document.getElementById("address").value.trim();
+   
+     // client‐side validation
+     if (!university || !name || !latitude || !longitude || !address) {
+       return alert("Please fill in all fields");
      }
+   
+     // build the payload exactly as PHP expects
+     const payload = {
+       action:     "createLocation",
+       university: university,
+       name:       name,
+       address:    address,
+       latitude:   latitude,
+       longitude:  longitude
+     };
+   
+     // send it off
+     $.ajax({
+       type: "POST",
+       url: apiUrl,
+       data: payload,
+       dataType: "json"
+     })
+     .done(function(response) {
+       if (response.success) {
+         alert("Location added successfully!");
+         // you can either clear the form:
+         document.getElementById("university").value = "";
+         document.getElementById("name").value       = "";
+         document.getElementById("latitude").value   = "";
+         document.getElementById("longitude").value  = "";
+         document.getElementById("address").value    = "";
+         // …or redirect back to your superAdmin home:
+         window.location.href = "superAdmin_home.html";
+       } else {
+         alert("Error: " + response.message);
+       }
+     })
+     .fail(function(jqXHR, textStatus) {
+       alert("Request failed: " + textStatus);
+     });
 }
+
+function promptStudentRSOCreate() {
+     const name = prompt("Enter a name for your new RSO:");
+     if (!name || !name.trim()) {
+       return alert("RSO creation cancelled.");
+     }
+     const uid = localStorage.getItem("uid");
+     if (!uid) {
+       return alert("You must be logged in to create an RSO.");
+     }
+     // generate a new RSOID however you like; for example:
+     const rsoid = Date.now().toString().slice(-6); // or use a counter like eventIdMaker
+   
+     $.post(apiUrl, {
+         action: "studentRSOCreate",
+         uid: uid,
+         rsoid: rsoid,
+         name: name.trim()
+       }, function(resp) {
+         if (resp.success) {
+           alert(resp.message);
+           window.location.href = "/Event_Planner/admin_home.html";
+           // TODO: refresh any RSO‑lists or dropdowns
+         } else {
+           alert("Error: " + resp.message);
+         }
+       }, "json")
+       .fail((_, status) => alert("Request failed: " + status));
+   }
 
 //functions for sidebar (all users)
 function deleteAccount(){

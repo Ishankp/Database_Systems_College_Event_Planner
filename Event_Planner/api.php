@@ -68,6 +68,12 @@ switch ($action) {
     case 'loadEventComments':
         loadEventComments($pdo);
         break;
+    case 'loadRSOMembers':
+        loadRSOMembers($pdo);
+        break;
+    case 'getRSOs':
+        getRSOs($pdo);
+        break;
     default:
         echo json_encode(["success" => false, "message" => "Invalid action"]);
         break;
@@ -351,6 +357,8 @@ function studentRSOLoad($pdo) {
     }
 }
 
+
+
 //Leave an RSO
 function studentRSOLeave($pdo) {
     $uid = $_POST['uid'] ?? '';
@@ -381,37 +389,64 @@ function studentRSOLeave($pdo) {
 
 
 //Create an RSO
-function studentRSOCreate($pdo) {
-    $uid   = $_POST['uid'] ?? '';
+function studentRSOCreate(PDO $pdo) {
+    $uid   = $_POST['uid']   ?? '';
     $rsoid = $_POST['rsoid'] ?? '';
-    $name  = $_POST['name'] ?? '';
-    if (!$uid || !$rsoid || !$name) {
-        echo json_encode(["success" => false, "message" => "UID, RSOID, and Name are required"]);
+    $name  = trim($_POST['name'] ?? '');
+
+    if (!$uid || !$rsoid || $name === '') {
+        echo json_encode(["success"=>false,"message"=>"UID, RSOID & Name are required"]);
         return;
     }
+
     try {
-        // Get the user's university
+        // 1) Figure out the user's university
         $stmt = $pdo->prepare("SELECT university FROM `User` WHERE UID = :uid LIMIT 1");
-        $stmt->execute([':uid' => $uid]);
+        $stmt->execute([':uid'=>$uid]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
-            echo json_encode(["success" => false, "message" => "User not found"]);
+            echo json_encode(["success"=>false,"message"=>"User not found"]);
             return;
         }
-        $university = $user['university'];
-        
-        // Insert into the RSO table.
-        $stmt = $pdo->prepare("INSERT INTO RSO (RSOID, Name, NumMem, Approved, University, CreatorID) 
-                               VALUES (:rsoid, :name, 1, FALSE, :university, :uid)");
-        $stmt->execute([
+        $univ = $user['university'];
+
+        // 2) Insert into RSO
+        $ins = $pdo->prepare("
+            INSERT INTO RSO
+              (RSOID, Name, NumMem, Approved, University, CreatorID)
+            VALUES
+              (:rsoid, :name, 1, FALSE, :univ, :uid)
+        ");
+        $ins->execute([
             ':rsoid' => $rsoid,
             ':name'  => $name,
-            ':university' => $university,
-            ':uid' => $uid
+            ':univ'  => $univ,
+            ':uid'   => $uid
         ]);
-        echo json_encode(["success" => true]);
+
+        // 3) *** NEW: Add the creator as a member in JoinRSO ***
+        $join = $pdo->prepare("
+            INSERT INTO JoinRSO (UID, RSOID)
+            VALUES (:uid, :rsoid)
+        ");
+        $join->execute([
+            ':uid'   => $uid,
+            ':rsoid' => $rsoid
+        ]);
+
+        // 4) (Optional) Promote them to Admin if you still want that
+        $adm = $pdo->prepare("
+            INSERT IGNORE INTO Admin (UserID)
+            VALUES (:uid)
+        ");
+        $adm->execute([':uid'=>$uid]);
+
+        echo json_encode([
+            "success" => true,
+            "message" => "RSO created, you're now a member (and an Admin)."
+        ]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        echo json_encode(["success"=>false,"message"=>$e->getMessage()]);
     }
 }
 
@@ -523,10 +558,12 @@ function createRSOEvent($pdo) {
         $stmt = $pdo->prepare("SELECT RSOID FROM RSO WHERE CreatorID = :uid LIMIT 1");
         $stmt->execute([':uid' => $uid]);
         $rso = $stmt->fetch(PDO::FETCH_ASSOC);
+        
         if (!$rso) {
             echo json_encode(["success" => false, "message" => "No RSO associated with this admin"]);
             return;
         }
+        
         $rsoid = $rso['RSOID'];
         
         // Insert into the Event table.
@@ -821,5 +858,76 @@ function loadEventComments($pdo) {
         ]);
     }
 }
+
+// Load all members for a specific RSO
+function loadRSOMembers($pdo) {
+    $rsoid = $_POST['rsoid'] ?? '';
+
+    // Validate the input.
+    if (!$rsoid) {
+        echo json_encode([
+            "success" => false,
+            "message" => "RSOID is required."
+        ]);
+        return;
+    }
+
+    try {
+        // Retrieve all members for the given RSO.
+        // Join the JoinRSO table with the User table to get detailed user information.
+        $sql = "SELECT U.UID, U.firstname, U.lastname, U.email 
+                FROM JoinRSO j 
+                JOIN User U ON j.UID = U.UID
+                WHERE j.RSOID = :rsoid";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':rsoid' => $rsoid]);
+        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            "success" => true,
+            "members" => $members
+        ]);
+    } catch (PDOException $e) {
+        echo json_encode([
+            "success" => false,
+            "message" => $e->getMessage()
+        ]);
+    }
+}
+
+// … down below, alongside your other functions …
+
+/*
+ Returns all approved RSOs for the current user's university.*/
+function getRSOs(PDO $pdo) {
+    $uid = $_POST['uid'] ?? '';
+    if (!$uid) {
+        echo json_encode(['success'=>false,'message'=>'Missing uid']);
+        return;
+    }
+
+    // 1) figure out the user's university
+    $stmt = $pdo->prepare("SELECT university FROM User WHERE UID = :uid LIMIT 1");
+    $stmt->execute([':uid'=>$uid]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['success'=>false,'message'=>'User not found']);
+        return;
+    }
+
+    // 2) pull all approved RSOs in that university
+    $stmt = $pdo->prepare("
+        SELECT RSOID, Name
+          FROM RSO
+         WHERE University = :univ
+           AND Approved = TRUE
+         ORDER BY Name
+    ");
+    $stmt->execute([':univ'=>$user['university']]);
+    $rsos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(['success'=>true,'rsos'=>$rsos]);
+}
+
 
 ?>
